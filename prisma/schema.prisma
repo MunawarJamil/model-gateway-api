@@ -1,0 +1,122 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  apiKeys         ApiKey[]
+  promptTemplates PromptTemplate[]
+}
+
+model ApiKey {
+  id                String    @id @default(uuid())
+  userId            String
+  keyHash           String    @unique
+  prefix            String
+  name              String
+  isActive          Boolean   @default(true)
+  requestsPerMin    Int       @default(60)
+  monthlyTokenLimit Int       @default(100000)
+  lastUsedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  user             User              @relation(fields: [userId], references: [id])
+  aiRequests       AiRequest[]
+  usageRecords     UsageRecord[]
+  webhookEndpoints WebhookEndpoint[]
+}
+
+model AiRequest {
+  id               String   @id @default(uuid())
+  apiKeyId         String
+  provider         String
+  model            String
+  prompt           String
+  response         String?
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  type             String
+  status           String
+  createdAt        DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id])
+  job    Job?
+}
+
+model Job {
+  id          String    @id @default(uuid())
+  aiRequestId String    @unique
+  bullJobId   String?
+  status      String
+  retryCount  Int       @default(0)
+  result      String?
+  error       String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  aiRequest         AiRequest         @relation(fields: [aiRequestId], references: [id])
+  webhookDeliveries WebhookDelivery[]
+}
+
+model UsageRecord {
+  id            String   @id @default(uuid())
+  apiKeyId      String
+  year          Int
+  month         Int
+  totalRequests Int      @default(0)
+  totalTokens   Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id])
+
+  @@unique([apiKeyId, year, month])
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(uuid())
+  apiKeyId  String
+  url       String
+  secret    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  apiKey            ApiKey            @relation(fields: [apiKeyId], references: [id])
+  webhookDeliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id                String    @id @default(uuid())
+  jobId             String
+  webhookEndpointId String
+  statusCode        Int?
+  status            String
+  attemptCount      Int       @default(0)
+  nextRetryAt       DateTime?
+  deliveredAt       DateTime?
+
+  job             Job             @relation(fields: [jobId], references: [id])
+  webhookEndpoint WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id])
+}
+
+model PromptTemplate {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  content   String
+  variables Json?
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
