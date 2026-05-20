@@ -7,5 +7,6 @@ import { JwtGuard } from '../../common/guards/jwt.guard';
 @Module({
   controllers: [KeysController],
   providers: [KeysService, ApiKeyGuard, JwtGuard],
+  exports: [KeysService],
 })
 export class KeysModule {}

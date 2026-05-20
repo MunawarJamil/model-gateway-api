@@ -1,3 +1,5 @@
+import { Module, Injectable, Global } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 let redisClient: Redis | null = null;
@@ -17,3 +19,19 @@ export function getRedisClient(url: string): Redis {
 
   return redisClient;
 }
+
+@Injectable()
+export class RedisService {
+  public readonly client: Redis;
+
+  constructor(private readonly config: ConfigService) {
+    this.client = getRedisClient(this.config.get<string>('REDIS_URL')!);
+  }
+}
+
+@Global()
+@Module({
+  providers: [RedisService],
+  exports: [RedisService],
+})
+export class RedisModule {}

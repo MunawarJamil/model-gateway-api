@@ -46,6 +46,7 @@ model AiRequest {
   response         String?
   promptTokens     Int      @default(0)
   completionTokens Int      @default(0)
+  latencyMs        Int?
   type             String
   status           String
   createdAt        DateTime @default(now())
