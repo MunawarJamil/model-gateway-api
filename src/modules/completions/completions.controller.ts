@@ -14,13 +14,17 @@ import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import type { Response } from 'express';
 import { getErrorMessage } from '../providers/provider.interface';
+import { JobsService } from '../jobs/jobs.service';
 
 @Controller()
 // Guards run in order: authenticate the API key first, then rate-limit it.
 @UseGuards(ApiKeyGuard, RateLimitGuard)
 export class CompletionsController {
   private readonly logger = new Logger(CompletionsController.name);
-  constructor(private readonly completions: CompletionsService) {}
+  constructor(
+    private readonly completions: CompletionsService,
+    private readonly jobs: JobsService,
+  ) {}
 
   @Post('complete')
   async complete(@Body() dto: CompleteDto, @Req() req: Request) {
@@ -80,5 +84,16 @@ export class CompletionsController {
     } finally {
       res.end();
     }
+  }
+// day-6 : Added an async endpoint for non-streaming completions that enqueues a job instead of processing immediately. The controller passes the prompt, provider/model choice, and API key info to the JobsService which adds it to a queue for background processing. This allows handling of long-running requests without keeping the client waiting, and we can implement retries or other logic in the job processor if needed.
+  @Post('complete/async')
+  async completeAsync(@Body() dto: CompleteDto, @Req() req: Request) {
+    const apiKey = (req as any).apiKey;
+    return this.jobs.enqueue({
+      prompt: dto.prompt ?? '',
+      provider: dto.provider,
+      model: dto.model,
+      apiKeyRecord: apiKey,
+    });
   }
 }

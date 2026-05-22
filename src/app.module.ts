@@ -9,6 +9,8 @@ import { RateLimitModule } from './modules/rate-limit/rate-limit.module';
 import { UsageModule } from './modules/usage/usage.module';
 import { CompletionsModule } from './modules/completions/completions.module';
 import { TemplatesModule } from './modules/templates/templates.module';
+import { JobsModule } from './modules/jobs/jobs.module';
+import { QueueModule } from './modules/queue/queue.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +26,8 @@ import { TemplatesModule } from './modules/templates/templates.module';
     UsageModule,
     CompletionsModule,
     TemplatesModule,
+    QueueModule,
+    JobsModule,
   ],
   controllers: [], // no controllers in the AppModule, they are defined in their respective modules
 
