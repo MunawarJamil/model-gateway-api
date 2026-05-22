@@ -3,6 +3,7 @@ import { GeminiProvider } from './gemini.provider';
 import { GroqProvider } from './groq.provider';
 import {
   AiProvider,
+  CompletionChunk,
   CompletionRequest,
   CompletionResult,
   getErrorMessage,
@@ -88,4 +89,23 @@ export class ProvidersService {
       throw new Error('All AI providers failed to process the request');
     }
   }
+
+
+
+  /**
+   * Routes a streaming request to the chosen provider.
+   * No fallback for streaming — if the primary fails, the error
+   * surfaces immediately since we are mid-stream.
+   */
+  async *completeStream(
+    primaryName: string,
+    request: CompletionRequest,
+    signal?: AbortSignal,
+  ): AsyncGenerator<CompletionChunk> {
+    const provider = this.getProvider(primaryName);
+    yield* provider.completeStream(request, signal);
+  }
+
+
+
 }

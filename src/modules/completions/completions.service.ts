@@ -112,9 +112,6 @@ export class CompletionsService {
     // Step 4: rate limit check (throws 429 if exceeded)
     // rate-limit-guard will handle at route level.
 
-
-
-
     // Step 5: monthly token limit check (throws 429 if exceeded).
     await this.usage.checkMonthlyLimit(apiKey.id, apiKey.monthlyTokenLimit);
 
@@ -199,6 +196,64 @@ export class CompletionsService {
       this.logger.error(
         `Failed to log failed request: ${getErrorMessage(error)}`,
       );
+    }
+  }
+
+  /**
+   * day 5 : Streams a completion from the provider chunk by chunk.
+   * Yields each chunk to the controller which forwards it over SSE.
+   * Logs usage after the stream completes.
+   */
+  async *stream(
+    dto: CompleteDto,
+    apiKey: ApiKeyContext,
+    signal: AbortSignal,
+  ): AsyncGenerator<any> {
+    const userId = apiKey.id;
+    const prompt = await this.resolvePrompt(dto, userId);
+    const providerName = dto.provider ?? apiKey.defaultProvider;
+
+    // Monthly limit check before starting the stream.
+    await this.usage.checkMonthlyLimit(apiKey.id, apiKey.monthlyTokenLimit);
+
+    const startedAt = Date.now();
+
+    const chunkStream = this.providers.completeStream(
+      providerName,
+      { prompt, model: dto.model },
+      signal,
+    );
+
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let model = '';
+
+    for await (const chunk of chunkStream) {
+      yield chunk;
+
+      // Capture usage from the final chunk for logging.
+      if (chunk.done) {
+        promptTokens = chunk.promptTokens ?? 0;
+        completionTokens = chunk.completionTokens ?? 0;
+        model = chunk.model ?? '';
+      }
+    }
+
+    // Only log if stream completed naturally — not on client disconnect.
+    if (!signal.aborted) {
+      const latencyMs = Date.now() - startedAt;
+      await this.usage.logRequest({
+        apiKeyId: apiKey.id,
+        provider: providerName,
+        model,
+        prompt,
+        response: '', // full text not accumulated — tokens are enough
+        promptTokens,
+        completionTokens,
+        latencyMs,
+        type: 'sync',
+        status: 'success',
+      });
     }
   }
 }

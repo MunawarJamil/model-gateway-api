@@ -3,6 +3,7 @@ import Groq from 'groq-sdk';
 import { ConfigService } from '@nestjs/config';
 import {
   AiProvider,
+  CompletionChunk,
   CompletionRequest,
   CompletionResult,
 } from './provider.interface';
@@ -44,6 +45,54 @@ export class GroqProvider implements AiProvider {
       model: modelName,
       promptTokens: usage?.prompt_tokens ?? 0,
       completionTokens: usage?.completion_tokens ?? 0,
+    };
+  }
+
+  // Groq supports streaming responses via the same chat completions endpoint by setting stream: true. This method handles that streaming logic, yielding chunks of text as they arrive and finally yielding a completion chunk with usage metadata when the stream is done. The caller can pass an AbortSignal to cancel the stream if needed (e.g., if the client disconnects).
+  async *completeStream(
+    request: CompletionRequest,
+    signal?: AbortSignal,
+  ): AsyncGenerator<CompletionChunk> {
+    const modelName = request.model ?? this.defaultModel;
+
+    // stream: true tells Groq to return an async iterable of chunks
+    // instead of waiting for the full response.
+    const stream = await this.client.chat.completions.create({
+      model: modelName,
+      messages: [{ role: 'user', content: request.prompt }],
+      stream: true,
+    });
+
+    let promptTokens = 0;
+    let completionTokens = 0;
+
+    for await (const chunk of stream) {
+      // If the caller cancelled (client disconnected), stop processing.
+      if (signal?.aborted) break;
+
+      const token = chunk.choices[0]?.delta?.content ?? '';
+
+      // Groq sends usage on the final chunk under x_groq.usage.
+      // Capture it when present so we can report it at stream end.
+      const groqUsage = (chunk as any).x_groq?.usage;
+      if (groqUsage) {
+        promptTokens = groqUsage.prompt_tokens ?? 0;
+        completionTokens = groqUsage.completion_tokens ?? 0;
+      }
+
+      if (token) {
+        yield { token, done: false };
+      }
+    }
+
+    // Final chunk signals the controller that streaming is complete
+    // and carries the token counts for usage logging.
+    yield {
+      token: '',
+      done: true,
+      model: modelName,
+      promptTokens,
+      completionTokens,
     };
   }
 }
