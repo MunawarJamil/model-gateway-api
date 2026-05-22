@@ -11,6 +11,8 @@ import { CompletionsModule } from './modules/completions/completions.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { QueueModule } from './modules/queue/queue.module';
+// day 7: webhook management + delivery dispatcher
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -28,6 +30,7 @@ import { QueueModule } from './modules/queue/queue.module';
     TemplatesModule,
     QueueModule,
     JobsModule,
+    WebhooksModule,
   ],
   controllers: [], // no controllers in the AppModule, they are defined in their respective modules
 

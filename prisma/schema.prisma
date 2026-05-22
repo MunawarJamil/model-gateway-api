@@ -67,8 +67,7 @@ model Job {
   completedAt DateTime?
   createdAt   DateTime  @default(now())
 
-  aiRequest         AiRequest         @relation(fields: [aiRequestId], references: [id])
-  webhookDeliveries WebhookDelivery[]
+  aiRequest AiRequest @relation(fields: [aiRequestId], references: [id])
 }
 
 model UsageRecord {
@@ -97,17 +96,32 @@ model WebhookEndpoint {
   webhookDeliveries WebhookDelivery[]
 }
 
+// day 7: WebhookDelivery now stores the full audit trail for each attempt —
+// signed payload, response body (truncated), error message, latency, and the
+// event name (job.completed | job.failed). Status moves pending -> success |
+// failed | dead_letter. One row per logical delivery; updated in place across
+// retries so attemptCount reflects how many tries it took.
+//
+// bullJobId is the BullMQ job id from the completion-queue (plain string, no
+// FK). The Prisma `Job` table is not yet populated by JobsService, so we
+// avoid an FK that nothing satisfies — to be revisited when Job persistence
+// is wired up.
 model WebhookDelivery {
   id                String    @id @default(uuid())
-  jobId             String
+  bullJobId         String
   webhookEndpointId String
+  event             String
+  payload           Json?
   statusCode        Int?
   status            String
   attemptCount      Int       @default(0)
+  responseBody      String?
+  errorMessage      String?
+  latencyMs         Int?
   nextRetryAt       DateTime?
   deliveredAt       DateTime?
+  createdAt         DateTime  @default(now())
 
-  job             Job             @relation(fields: [jobId], references: [id])
   webhookEndpoint WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id])
 }
 
