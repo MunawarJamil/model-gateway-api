@@ -4,7 +4,7 @@ import { UsageService } from './usage.service';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 
-@Controller('v1/usage')
+@Controller('usage')
 @UseGuards(ApiKeyGuard, RateLimitGuard)
 export class UsageController {
   constructor(private readonly usageService: UsageService) {}

@@ -7,6 +7,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { KeysModule } from './modules/keys/keys.module';
 import { RateLimitModule } from './modules/rate-limit/rate-limit.module';
 import { UsageModule } from './modules/usage/usage.module';
+import { CompletionsModule } from './modules/completions/completions.module';
+import { TemplatesModule } from './modules/templates/templates.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -20,6 +22,8 @@ import { UsageModule } from './modules/usage/usage.module';
     RedisModule,
     RateLimitModule,
     UsageModule,
+    CompletionsModule,
+    TemplatesModule,
   ],
   controllers: [], // no controllers in the AppModule, they are defined in their respective modules
 

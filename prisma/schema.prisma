@@ -28,6 +28,7 @@ model ApiKey {
   isActive          Boolean   @default(true)
   requestsPerMin    Int       @default(60)
   monthlyTokenLimit Int       @default(100000)
+  defaultProvider   String    @default("gemini")
   lastUsedAt        DateTime?
   createdAt         DateTime  @default(now())
 

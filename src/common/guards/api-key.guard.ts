@@ -28,7 +28,7 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or inactive API key');
     }
 
-    // downstream controllers mein available hoga
+    // will be available in request handlers as req.apiKey, and req.userId for convenience (since userId is needed in many places)
     (request as any).userId = apiKey.userId;
     (request as any).apiKey = apiKey;
 

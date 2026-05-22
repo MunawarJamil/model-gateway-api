@@ -19,7 +19,7 @@ export class RateLimitGuard implements CanActivate {
     const { limited, retryAfter } = await this.rateLimitService.isRateLimited(
       apiKey.id,
       apiKey.requestsPerMin,
-    );
+    ); // Check if the API key is rate-limited based on its configured requests per minute
 
     if (limited) {
       throw new HttpException(
