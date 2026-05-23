@@ -14,7 +14,6 @@ import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import type { Response } from 'express';
 import { getErrorMessage } from '../providers/provider.interface';
-import { JobsService } from '../jobs/jobs.service';
 import {
   ApiTags,
   ApiOperation,
@@ -28,10 +27,7 @@ import {
 @UseGuards(ApiKeyGuard, RateLimitGuard)
 export class CompletionsController {
   private readonly logger = new Logger(CompletionsController.name);
-  constructor(
-    private readonly completions: CompletionsService,
-    private readonly jobs: JobsService,
-  ) {}
+  constructor(private readonly completions: CompletionsService) {}
 
   @Post('complete')
   @ApiOperation({ summary: 'Sync completion — waits for AI response' })
@@ -70,6 +66,7 @@ export class CompletionsController {
       const stream = this.completions.stream(
         dto,
         apiKey,
+        apiKey.userId,
         abortController.signal,
       );
 
@@ -79,9 +76,6 @@ export class CompletionsController {
         if (chunk.done) break;
       }
     } catch (error) {
-      res.write(
-        `data: ${JSON.stringify({ error: 'Stream failed', done: true })}\n\n`,
-      );
       this.logger.error(`Stream error: ${getErrorMessage(error)}`);
       res.write(
         `data: ${JSON.stringify({ error: 'Stream failed', done: true })}\n\n`,
@@ -100,11 +94,6 @@ export class CompletionsController {
   @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   async completeAsync(@Body() dto: CompleteDto, @Req() req: Request) {
     const apiKey = (req as any).apiKey;
-    return this.jobs.enqueue({
-      prompt: dto.prompt ?? '',
-      provider: dto.provider,
-      model: dto.model,
-      apiKeyRecord: apiKey,
-    });
+    return this.completions.enqueueAsync(dto, apiKey, apiKey.userId);
   }
 }

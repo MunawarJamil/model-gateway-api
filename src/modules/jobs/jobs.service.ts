@@ -13,7 +13,7 @@ export class JobsService {
     prompt: string;
     provider?: string;
     model?: string;
-    apiKeyRecord: any;
+    apiKeyId: string;
   }) {
     const job = await this.completionQueue.add('complete', data, {
       attempts: 3,
@@ -22,9 +22,13 @@ export class JobsService {
     return { jobId: job.id };
   }
 
-  async getJobStatus(jobId: string) {
+  async getJobStatus(jobId: string, apiKeyId: string) {
     const job = await this.completionQueue.getJob(jobId);
     if (!job) return null;
+
+    // Ownership check: a key may only read its own jobs. Job IDs are
+    // sequential, so without this any key could read another's results.
+    if (job.data?.apiKeyId !== apiKeyId) return null;
 
     const state = await job.getState();
     const result = job.returnvalue ?? null;

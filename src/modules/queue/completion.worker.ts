@@ -24,7 +24,7 @@ export class CompletionWorker extends WorkerHost {
   async process(job: Job): Promise<any> {
     this.logger.log(`Processing job ${job.id}`);
 
-    const { prompt, provider, model, apiKeyRecord } = job.data;
+    const { prompt, provider, model, apiKeyId } = job.data;
     const startTime = Date.now();
 
     try {
@@ -34,7 +34,7 @@ export class CompletionWorker extends WorkerHost {
       });
 
       await this.usage.logRequest({
-        apiKeyId: apiKeyRecord.id,
+        apiKeyId,
         provider: result.provider,
         model: result.model,
         prompt,
@@ -55,7 +55,7 @@ export class CompletionWorker extends WorkerHost {
       };
 
       // day 7: fire job.completed exactly once on success.
-      await this.dispatcher.dispatch(apiKeyRecord.id, 'job.completed', {
+      await this.dispatcher.dispatch(apiKeyId, 'job.completed', {
         jobId: job.id,
         ...response,
         completedAt: new Date().toISOString(),
@@ -70,7 +70,7 @@ export class CompletionWorker extends WorkerHost {
       const isFinalAttempt = job.attemptsMade + 1 >= attempts;
 
       if (isFinalAttempt) {
-        await this.dispatcher.dispatch(apiKeyRecord.id, 'job.failed', {
+        await this.dispatcher.dispatch(apiKeyId, 'job.failed', {
           jobId: job.id,
           error: err instanceof Error ? err.message : String(err),
           failedAt: new Date().toISOString(),

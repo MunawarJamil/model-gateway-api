@@ -25,7 +25,7 @@ export class JwtGuard implements CanActivate {
     try {
       const payload = jwt.verify(
         token,
-        this.configService.get<string>('hmacSecret')!,
+        this.configService.get<string>('jwtSecret')!,
       ) as { sub: string };
 
       (request as any).userId = payload.sub;

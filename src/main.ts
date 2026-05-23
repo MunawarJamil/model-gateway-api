@@ -1,11 +1,17 @@
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('v1');
+  app.setGlobalPrefix('v1', { exclude: ['health'] });
+
+  app.use(helmet());
+  app.enableCors();
+  app.enableShutdownHooks();
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -25,18 +31,16 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'JWT',
     )
-    .addApiKey(
-      { type: 'apiKey', in: 'header', name: 'x-api-key' },
-      'API-Key',
-    )
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'x-api-key' }, 'API-Key')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
-  console.log('Server running on port 3000');
-  console.log('Swagger docs at http://localhost:3000/api');
+  const port = app.get(ConfigService).get<number>('port') ?? 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`Server running on port ${port}`);
+  console.log(`Swagger docs at /api`);
 }
 
 bootstrap();

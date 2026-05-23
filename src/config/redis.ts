@@ -25,7 +25,7 @@ export class RedisService {
   public readonly client: Redis;
 
   constructor(private readonly config: ConfigService) {
-    this.client = getRedisClient(this.config.get<string>('REDIS_URL')!);
+    this.client = getRedisClient(this.config.get<string>('redisUrl')!);
   }
 }
 

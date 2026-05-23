@@ -16,8 +16,6 @@ export interface RoutedCompletion extends CompletionResult {
   fallbackUsed: boolean; // true if the primary failed and we switched
 }
 
-
-
 @Injectable()
 export class ProvidersService {
   private readonly logger = new Logger(ProvidersService.name);
@@ -90,8 +88,6 @@ export class ProvidersService {
     }
   }
 
-
-
   /**
    * Routes a streaming request to the chosen provider.
    * No fallback for streaming — if the primary fails, the error
@@ -105,7 +101,4 @@ export class ProvidersService {
     const provider = this.getProvider(primaryName);
     yield* provider.completeStream(request, signal);
   }
-
-
-
 }

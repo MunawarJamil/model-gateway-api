@@ -10,11 +10,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UsageService } from '../usage/usage.service';
 import { ProvidersService } from '../providers/providers.service';
 import { getErrorMessage } from '../providers/provider.interface';
+import { JobsService } from '../jobs/jobs.service';
 import { CompleteDto } from './dto/complete.dto';
 
 // The ApiKey context attached to the request by the auth guard.
 interface ApiKeyContext {
   id: string;
+  userId: string;
   defaultProvider: string;
   requestsPerMin: number;
   monthlyTokenLimit: number;
@@ -28,6 +30,7 @@ export class CompletionsService {
     private readonly prisma: PrismaService,
     private readonly usage: UsageService,
     private readonly providers: ProvidersService,
+    private readonly jobs: JobsService,
   ) {}
 
   // ─── Private Helpers ───────────────────────────────────────────────
@@ -170,6 +173,24 @@ export class CompletionsService {
   }
 
   /**
+   * Enqueues an async completion. Resolves the prompt (direct or template) and
+   * enforces the monthly limit up front, then queues only the data the worker
+   * needs — never the full API-key record (which carries the user's hash).
+   */
+  async enqueueAsync(dto: CompleteDto, apiKey: ApiKeyContext, userId: string) {
+    const prompt = await this.resolvePrompt(dto, userId);
+    await this.usage.checkMonthlyLimit(apiKey.id, apiKey.monthlyTokenLimit);
+    const providerName = dto.provider ?? apiKey.defaultProvider;
+
+    return this.jobs.enqueue({
+      prompt,
+      provider: providerName,
+      model: dto.model,
+      apiKeyId: apiKey.id,
+    });
+  }
+
+  /**
    * Logs a failed request without throwing — used inside an error path,
    * so a logging failure must not mask the original provider error.
    */
@@ -207,9 +228,9 @@ export class CompletionsService {
   async *stream(
     dto: CompleteDto,
     apiKey: ApiKeyContext,
+    userId: string,
     signal: AbortSignal,
   ): AsyncGenerator<any> {
-    const userId = apiKey.id;
     const prompt = await this.resolvePrompt(dto, userId);
     const providerName = dto.provider ?? apiKey.defaultProvider;
 

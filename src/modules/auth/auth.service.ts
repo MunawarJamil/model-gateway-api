@@ -61,7 +61,7 @@ export class AuthService {
 
     const token = jwt.sign(
       { sub: user.id, email: user.email },
-      this.configService.get<string>('hmacSecret')!,
+      this.configService.get<string>('jwtSecret')!,
       { expiresIn: '7d' },
     );
 

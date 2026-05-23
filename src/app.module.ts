@@ -1,8 +1,8 @@
-import { Module, OnModuleInit } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import envConfig from './config/env';
 import { PrismaModule } from './prisma/prisma.module';
-import { getRedisClient, RedisModule } from './config/redis';
+import { RedisModule } from './config/redis';
 import { AuthModule } from './modules/auth/auth.module';
 import { KeysModule } from './modules/keys/keys.module';
 import { RateLimitModule } from './modules/rate-limit/rate-limit.module';
@@ -13,6 +13,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { QueueModule } from './modules/queue/queue.module';
 // day 7: webhook management + delivery dispatcher
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { HealthController } from './health.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,15 +33,8 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
     JobsModule,
     WebhooksModule,
   ],
-  controllers: [], // no controllers in the AppModule, they are defined in their respective modules
+  controllers: [HealthController],
 
   providers: [],
 })
-export class AppModule implements OnModuleInit {
-  constructor(private configService: ConfigService) {}
-
-  onModuleInit() {
-    const redisUrl = this.configService.get<string>('redisUrl') ?? '';
-    getRedisClient(redisUrl);
-  }
-}
+export class AppModule {}

@@ -16,7 +16,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const url = config.get<string>('REDIS_URL')!;
+        const url = config.get<string>('redisUrl')!;
         const parsed = new URL(url);
         return {
           connection: {

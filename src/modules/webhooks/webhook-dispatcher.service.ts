@@ -9,11 +9,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import * as crypto from 'crypto';
+import { Prisma } from '../../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  WEBHOOK_MAX_ATTEMPTS,
-  WEBHOOK_QUEUE,
-} from '../queue/queue.constants';
+import { WEBHOOK_MAX_ATTEMPTS, WEBHOOK_QUEUE } from '../queue/queue.constants';
 import type { WebhookJobData } from '../queue/webhook.worker';
 
 export type WebhookEvent = 'job.completed' | 'job.failed';
@@ -69,7 +67,7 @@ export class WebhookDispatcherService {
           webhookEndpointId: endpointId,
           bullJobId: deliveryId,
           event,
-          payload: payload as object,
+          payload: payload as Prisma.InputJsonValue,
           status: 'pending',
           attemptCount: 0,
         },

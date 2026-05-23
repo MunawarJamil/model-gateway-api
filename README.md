@@ -26,7 +26,7 @@ A production-ready AI Gateway built with NestJS that sits between clients and mu
 | SSE Streaming | `POST /v1/complete/stream` — token-by-token stream |
 | Async Completions | `POST /v1/complete/async` — returns jobId instantly |
 | Provider Fallback | Auto-switches Gemini ↔ Groq on failure |
-| Rate Limiting | Redis sliding window — per API key, per minute |
+| Rate Limiting | Redis fixed-window counter — per API key, per minute |
 | Usage Metering | Token logging, monthly limits, daily/monthly stats |
 | Prompt Templates | Reusable templates with `{{variable}}` substitution |
 | Webhook Delivery | Job completion callbacks with HMAC signatures + retry |
@@ -120,7 +120,8 @@ DATABASE_URL=postgresql://...
 REDIS_URL=rediss://...
 PORT=3000
 NODE_ENV=development
-HMAC_SECRET=your-secret
+HMAC_SECRET=your-secret          # used to hash API keys
+JWT_SECRET=your-jwt-secret       # used to sign JWTs (falls back to HMAC_SECRET if unset)
 GEMINI_API_KEY=your-key
 GROQ_API_KEY=your-key
 ```
@@ -152,7 +153,7 @@ Client
 
 Guards (every request):
   ApiKeyGuard  → HMAC verify → attach apiKey to request
-  RateLimitGuard → Redis sliding window → 429 if exceeded
+  RateLimitGuard → Redis fixed-window counter → 429 if exceeded
 ```
 
 ---

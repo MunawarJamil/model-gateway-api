@@ -35,7 +35,8 @@ export class JobsController {
   })
   @ApiResponse({ status: 404, description: 'Job not found' })
   async getJob(@Param('id') id: string, @Req() req: any) {
-    const job = await this.jobsService.getJobStatus(id);
+    const apiKey = req.apiKey;
+    const job = await this.jobsService.getJobStatus(id, apiKey.id);
     if (!job) throw new NotFoundException(`Job ${id} not found`);
     return job;
   }

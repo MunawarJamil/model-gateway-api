@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KeysController } from './keys.controller';
+import { KeysService } from './keys.service';
+import { JwtGuard } from '../../common/guards/jwt.guard';
 
 describe('KeysController', () => {
   let controller: KeysController;
@@ -7,7 +9,11 @@ describe('KeysController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [KeysController],
-    }).compile();
+      providers: [{ provide: KeysService, useValue: {} }],
+    })
+      .overrideGuard(JwtGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<KeysController>(KeysController);
   });
