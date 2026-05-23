@@ -15,9 +15,16 @@ import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
 import type { Response } from 'express';
 import { getErrorMessage } from '../providers/provider.interface';
 import { JobsService } from '../jobs/jobs.service';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
+} from '@nestjs/swagger';
 
+@ApiTags('Completions')
+@ApiSecurity('API-Key')
 @Controller()
-// Guards run in order: authenticate the API key first, then rate-limit it.
 @UseGuards(ApiKeyGuard, RateLimitGuard)
 export class CompletionsController {
   private readonly logger = new Logger(CompletionsController.name);
@@ -27,14 +34,23 @@ export class CompletionsController {
   ) {}
 
   @Post('complete')
+  @ApiOperation({ summary: 'Sync completion — waits for AI response' })
+  @ApiResponse({ status: 201, description: 'AI response returned' })
+  @ApiResponse({
+    status: 429,
+    description: 'Rate limit or monthly token limit exceeded',
+  })
   async complete(@Body() dto: CompleteDto, @Req() req: Request) {
-    // ApiKeyGuard attaches the authenticated API key to the request.
     const apiKey = (req as any).apiKey;
-
     return this.completions.complete(dto, apiKey, apiKey.userId);
   }
 
   @Post('complete/stream')
+  @ApiOperation({
+    summary: 'Streaming completion — SSE token-by-token response',
+  })
+  @ApiResponse({ status: 200, description: 'SSE stream of tokens' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   async completeStream(
     @Body() dto: CompleteDto,
     @Req() req: Request,
@@ -42,15 +58,11 @@ export class CompletionsController {
   ) {
     const apiKey = (req as any).apiKey;
 
-    // Set SSE headers — tells the client to expect a stream of events,
-    // not a single JSON response.
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    // AbortController lets us cancel the upstream provider call
-    // if the client disconnects before the stream finishes.
     const abortController = new AbortController();
     req.on('close', () => abortController.abort());
 
@@ -62,21 +74,14 @@ export class CompletionsController {
       );
 
       for await (const chunk of stream) {
-        // Client disconnected — stop sending.
         if (abortController.signal.aborted) break;
-
-        // SSE format: each event is "data: <json>\n\n"
         res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-
-        // Final chunk — close the connection cleanly.
         if (chunk.done) break;
       }
     } catch (error) {
-      // Send error as a final SSE event so the client knows what happened.
       res.write(
         `data: ${JSON.stringify({ error: 'Stream failed', done: true })}\n\n`,
       );
-
       this.logger.error(`Stream error: ${getErrorMessage(error)}`);
       res.write(
         `data: ${JSON.stringify({ error: 'Stream failed', done: true })}\n\n`,
@@ -85,8 +90,14 @@ export class CompletionsController {
       res.end();
     }
   }
-// day-6 : Added an async endpoint for non-streaming completions that enqueues a job instead of processing immediately. The controller passes the prompt, provider/model choice, and API key info to the JobsService which adds it to a queue for background processing. This allows handling of long-running requests without keeping the client waiting, and we can implement retries or other logic in the job processor if needed.
+
   @Post('complete/async')
+  @ApiOperation({
+    summary:
+      'Async completion — returns jobId immediately, processes in background',
+  })
+  @ApiResponse({ status: 201, description: 'Job enqueued, returns jobId' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   async completeAsync(@Body() dto: CompleteDto, @Req() req: Request) {
     const apiKey = (req as any).apiKey;
     return this.jobs.enqueue({

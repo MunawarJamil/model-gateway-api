@@ -1,14 +1,18 @@
 import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTemplateDto {
-  // A human-friendly name to identify the template.
+  @ApiProperty({ example: 'Marketing Email', maxLength: 100 })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name!: string;
 
-  // The template body. May contain {{variable}} placeholders
-  // that get interpolated at completion time.
+  @ApiProperty({
+    example: 'Write a marketing email for {{brand}} about {{topic}}',
+    maxLength: 10000,
+    description: 'Template body with {{variable}} placeholders',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(10000)

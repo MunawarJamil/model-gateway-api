@@ -5,31 +5,32 @@ import {
   IsObject,
   IsNotEmpty,
 } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CompleteDto {
-  // Direct prompt. Optional because the request may use a template instead.
+  @ApiPropertyOptional({ example: 'Explain quantum computing in simple terms' })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   prompt?: string;
 
-  // Template-based request: reference a saved template by id.
+  @ApiPropertyOptional({ example: 'clx1234abcd' })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   templateId?: string;
 
-  // Variables to interpolate into the template (e.g. { name: "Nike" }).
+  @ApiPropertyOptional({ example: { name: 'Nike', topic: 'marketing' } })
   @IsOptional()
   @IsObject()
   variables?: Record<string, string>;
 
-  // Optional provider override. If omitted, the API key's default is used.
+  @ApiPropertyOptional({ example: 'groq', enum: ['gemini', 'groq'] })
   @IsOptional()
   @IsIn(['gemini', 'groq'])
   provider?: string;
 
-  // Optional model override, passed through to the provider.
+  @ApiPropertyOptional({ example: 'llama-3.1-8b-instant' })
   @IsOptional()
   @IsString()
   model?: string;
