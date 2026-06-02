@@ -10,7 +10,12 @@ async function bootstrap() {
   app.setGlobalPrefix('v1', { exclude: ['health'] });
 
   app.use(helmet());
-  app.enableCors();
+  app.enableCors({
+    origin: ['http://localhost:5173', 'http://localhost:4173'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+  });
   app.enableShutdownHooks();
 
   app.useGlobalPipes(

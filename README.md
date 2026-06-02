@@ -90,7 +90,10 @@ GET /v1/usage            — Daily & monthly token usage
 - Node.js 20+
 - pnpm
 - PostgreSQL
-- Redis (or Upstash)
+- Redis (run locally via `docker compose up -d redis`)
+
+> ⚠️ Don't point this at Upstash's free tier — BullMQ workers idle-poll
+> enough that they blow through the 500k commands/day cap in hours.
 
 ### Steps
 
@@ -117,7 +120,7 @@ pnpm start:dev
 
 ```env
 DATABASE_URL=postgresql://...
-REDIS_URL=rediss://...
+REDIS_URL=redis://localhost:6379
 PORT=3000
 NODE_ENV=development
 HMAC_SECRET=your-secret          # used to hash API keys
@@ -131,8 +134,8 @@ GROQ_API_KEY=your-key
 ## Docker
 
 ```bash
-# Run with Docker Compose (app + PostgreSQL)
-docker-compose up
+# Run with Docker Compose (app + PostgreSQL + Redis)
+docker compose up
 
 # Build image only
 docker build -t model-gateway-api .
