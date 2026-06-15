@@ -29,6 +29,7 @@ export class JwtGuard implements CanActivate {
       ) as { sub: string };
 
       (request as any).userId = payload.sub;
+      (request as any).user = payload;
       return true;
     } catch {
       throw new UnauthorizedException('Invalid token');

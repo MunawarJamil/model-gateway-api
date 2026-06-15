@@ -14,13 +14,11 @@ export class ApiKeyGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
-    const authHeader = request.headers['authorization'];
+    const rawKey = request.headers['x-api-key'];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!rawKey || Array.isArray(rawKey)) {
       throw new UnauthorizedException('API key missing');
     }
-
-    const rawKey = authHeader.split(' ')[1];
 
     const apiKey = await this.keysService.validateKey(rawKey);
 
@@ -28,7 +26,6 @@ export class ApiKeyGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or inactive API key');
     }
 
-    // will be available in request handlers as req.apiKey, and req.userId for convenience (since userId is needed in many places)
     (request as any).userId = apiKey.userId;
     (request as any).apiKey = apiKey;
 
