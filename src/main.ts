@@ -10,13 +10,17 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   app.setGlobalPrefix('v1', { exclude: ['health'] });
 
-  app.use(
-    helmet({
+  app.use((req , res , next) => {
+    if (req.path.startsWith('/api')) return next();
+
+    return helmet({
       contentSecurityPolicy: false,
       crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: false,
+      originAgentCluster: false,
       hsts: false,
-    }),
-  );
+    })(req, res, next);
+  });
   app.enableCors({
     origin: configService.get<string[]>('corsOrigins'),
     credentials: true,
