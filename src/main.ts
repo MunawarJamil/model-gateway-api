@@ -10,7 +10,13 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   app.setGlobalPrefix('v1', { exclude: ['health'] });
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginOpenerPolicy: false,
+      hsts: false,
+    }),
+  );
   app.enableCors({
     origin: configService.get<string[]>('corsOrigins'),
     credentials: true,
