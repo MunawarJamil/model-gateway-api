@@ -2,7 +2,7 @@
 
 A production-ready AI Gateway built with NestJS that sits between clients and multiple LLM providers (Gemini & Groq). Supports sync, streaming, and async completions with authentication, rate limiting, usage metering, webhook delivery, and full Swagger documentation.
 
-🚀 **Live:** https://model-gateway-api-production.up.railway.app/api
+🚀 **Live:**  https://model-gateway.duckdns.org/api
 
 ---
 
@@ -12,7 +12,7 @@ A production-ready AI Gateway built with NestJS that sits between clients and mu
 - **PostgreSQL** via Prisma 7
 - **Redis** (Upstash) + BullMQ for queues & rate limiting
 - **AI Providers:** Google Gemini, Groq
-- **Deployed on:** Railway
+- **Deployed on:** AWS EC2 with Nginx reverse proxy, PM2 process management, custom domain, and HTTPS via Let's Encrypt.
 
 ---
 
