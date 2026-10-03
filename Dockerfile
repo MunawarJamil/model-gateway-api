@@ -1,3 +1,19 @@
+# Development stage for local hot-reload
+FROM node:24-alpine AS development
+
+WORKDIR /app
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+RUN pnpm exec prisma generate
+
+EXPOSE 3000
+CMD ["pnpm", "start:dev"]
+
 # Build stage
 FROM node:24-alpine AS builder
 

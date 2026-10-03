@@ -10,7 +10,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   app.setGlobalPrefix('v1', { exclude: ['health'] });
 
-  app.use((req , res , next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api')) return next();
 
     return helmet({

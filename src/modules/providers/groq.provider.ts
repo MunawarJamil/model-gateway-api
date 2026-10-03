@@ -14,7 +14,7 @@ export class GroqProvider implements AiProvider {
 
   private readonly logger = new Logger(GroqProvider.name);
   private readonly client: Groq;
-  private readonly defaultModel = 'llama-3.1-8b-instant';
+  private readonly defaultModel = 'openai/gpt-oss-20b';
 
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>('GROQ_API_KEY');
@@ -74,7 +74,15 @@ export class GroqProvider implements AiProvider {
 
       // Groq sends usage on the final chunk under x_groq.usage.
       // Capture it when present so we can report it at stream end.
-      const groqUsage = (chunk as any).x_groq?.usage;
+      const groqChunk = chunk as unknown as {
+        x_groq?: {
+          usage?: {
+            prompt_tokens?: number;
+            completion_tokens?: number;
+          };
+        };
+      };
+      const groqUsage = groqChunk.x_groq?.usage;
       if (groqUsage) {
         promptTokens = groqUsage.prompt_tokens ?? 0;
         completionTokens = groqUsage.completion_tokens ?? 0;
